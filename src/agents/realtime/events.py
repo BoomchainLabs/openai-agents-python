@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Literal, Union
 
 from typing_extensions import TypeAlias
 
+from ..guardrail import OutputGuardrailResult
 from ..run_context import RunContextWrapper
 from ..tool import Tool
 from .agent import RealtimeAgent
 from .items import RealtimeItem
-from .transport_events import RealtimeTransportAudioEvent, RealtimeTransportEvent
+from .model_events import RealtimeModelAudioEvent, RealtimeModelEvent
 
 
 @dataclass
@@ -93,16 +96,16 @@ class RealtimeToolEnd:
 
 
 @dataclass
-class RealtimeRawTransportEvent:
-    """Forwards raw events from the transport layer."""
+class RealtimeRawModelEvent:
+    """Forwards raw events from the model layer."""
 
-    data: RealtimeTransportEvent
-    """The raw data from the transport layer."""
+    data: RealtimeModelEvent
+    """The raw data from the model layer."""
 
     info: RealtimeEventInfo
     """Common info for all events, such as the context."""
 
-    type: Literal["raw_transport_event"] = "raw_transport_event"
+    type: Literal["raw_model_event"] = "raw_model_event"
 
 
 @dataclass
@@ -119,8 +122,8 @@ class RealtimeAudioEnd:
 class RealtimeAudio:
     """Triggered when the agent generates new audio to be played."""
 
-    audio: RealtimeTransportAudioEvent
-    """The audio event from the transport layer."""
+    audio: RealtimeModelAudioEvent
+    """The audio event from the model layer."""
 
     info: RealtimeEventInfo
     """Common info for all events, such as the context."""
@@ -179,7 +182,20 @@ class RealtimeHistoryAdded:
     type: Literal["history_added"] = "history_added"
 
 
-# TODO (rm) Add guardrails
+@dataclass
+class RealtimeGuardrailTripped:
+    """A guardrail has been tripped and the agent has been interrupted."""
+
+    guardrail_results: list[OutputGuardrailResult]
+    """The results from all triggered guardrails."""
+
+    message: str
+    """The message that was being generated when the guardrail was triggered."""
+
+    info: RealtimeEventInfo
+    """Common info for all events, such as the context."""
+
+    type: Literal["guardrail_tripped"] = "guardrail_tripped"
 
 RealtimeSessionEvent: TypeAlias = Union[
     RealtimeAgentStartEvent,
@@ -187,12 +203,13 @@ RealtimeSessionEvent: TypeAlias = Union[
     RealtimeHandoffEvent,
     RealtimeToolStart,
     RealtimeToolEnd,
-    RealtimeRawTransportEvent,
+    RealtimeRawModelEvent,
     RealtimeAudioEnd,
     RealtimeAudio,
     RealtimeAudioInterrupted,
     RealtimeError,
     RealtimeHistoryUpdated,
     RealtimeHistoryAdded,
+    RealtimeGuardrailTripped,
 ]
 """An event emitted by the realtime session."""
